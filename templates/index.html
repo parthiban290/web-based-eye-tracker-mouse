@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EyeFlow - Hands-Free Computer Control</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(rgba(102, 126, 234, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(102, 126, 234, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.12;
+            z-index: 0;
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .bg-glow-1 { background: #667eea; top: -200px; left: -200px; }
+        .bg-glow-2 { background: #764ba2; bottom: -200px; right: -200px; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 30px); }
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            padding: 18px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 26, 0.85);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s;
+        }
+
+        .navbar.scrolled {
+            padding: 12px 60px;
+            background: rgba(10, 10, 26, 0.95);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 0 20px 5px rgba(102, 126, 234, 0.2); }
+        }
+
+        .logo span:first-of-type { color: #fff; }
+        .logo span:last-of-type { color: #667eea; }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover { color: #fff; }
+        .nav-links a:hover::after { width: 100%; }
+
+        /* ==================== HERO SECTION ==================== */
+        .hero-section {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 60px 80px;
+            gap: 80px;
+        }
+
+        .hero {
+            flex: 1;
+            max-width: 600px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .badge::before { content: '✦'; }
+
+        .hero h1 {
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            color: #888;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+
+        .feature-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .feature-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #ccc;
+            transition: all 0.3s;
+        }
+
+        .feature-tag:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Auth Card */
+        .auth-section {
+            width: 420px;
+            flex-shrink: 0;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .auth-card {
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 36px;
+            backdrop-filter: blur(20px);
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 28px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            transition: all 0.3s;
+            border: none;
+            background: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .auth-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #aaa;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper .icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            opacity: 0.4;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 14px 14px 42px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.15);
+        }
+
+        .input-wrapper input::placeholder { color: #555; }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .password-toggle:hover { color: #667eea; }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.35);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .privacy-note {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            display: block;
+        }
+
+        .message.success {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+            display: block;
+        }
+
+        .confirm-password { display: none; }
+
+        /* ==================== FEATURES SECTION ==================== */
+        .section {
+            position: relative;
+            z-index: 1;
+            padding: 100px 60px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-header h2 {
+            font-size: 38px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .section-header h2 .highlight {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-header p {
+            color: #666;
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* Feature Cards */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(20, 20, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            width: 56px; height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        .feature-icon.purple { background: rgba(102, 126, 234, 0.15); }
+        .feature-icon.orange { background: rgba(251, 146, 60, 0.15); }
+        .feature-icon.green { background: rgba(34, 197, 94, 0.15); }
+        .feature-icon.blue { background: rgba(59, 130, 246, 0.15); }
+        .feature-icon.red { background: rgba(239, 68, 68, 0.15); }
+        .feature-icon.teal { background: rgba(20, 184, 166, 0.15); }
+
+        .feature-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ==================== HOW IT WORKS SECTION ==================== */
+        .steps-container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .steps-line {
+            position: absolute;
+            left: 32px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #667eea, #764ba2, transparent);
+        }
+
+        .step {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 48px;
+            position: relative;
+            opacity: 0;
+            transform: translateX(-30px);
+            animation: stepReveal 0.6s ease forwards;
+        }
+
+        .step:nth-child(2) { animation-delay: 0.15s; }
+        .step:nth-child(3) { animation-delay: 0.3s; }
+        .step:nth-child(4) { animation-delay: 0.45s; }
+        .step:nth-child(5) { animation-delay: 0.6s; }
+
+        @keyframes stepReveal {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .step-number {
+            width: 64px; height: 64px;
+            min-width: 64px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 800;
+            z-index: 2;
+        }
+
+        .step-content {
+            background: rgba(20, 20, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 28px;
+            flex: 1;
+            transition: all 0.3s;
+        }
+
+        .step-content:hover {
+            border-color: rgba(102, 126, 234, 0.2);
+            transform: translateX(5px);
+        }
+
+        .step-content h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .step-content p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ==================== ACCESSIBILITY SECTION ==================== */
+        .access-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .access-card {
+            background: rgba(20, 20, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 32px;
+            display: flex;
+            gap: 20px;
+            transition: all 0.4s;
+        }
+
+        .access-card:hover {
+            border-color: rgba(102, 126, 234, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .access-icon {
+            width: 50px; height: 50px;
+            min-width: 50px;
+            background: rgba(102, 126, 234, 0.12);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .access-card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .access-card p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 40px 60px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            color: #444;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        /* Section divider */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(102, 126, 234, 0.2), transparent);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* ==================== ANIMATIONS ==================== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.7s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .hero-section {
+                flex-direction: column;
+                padding: 100px 20px 60px;
+                gap: 40px;
+            }
+            .hero h1 { font-size: 36px; }
+            .auth-section { width: 100%; max-width: 420px; }
+            .navbar { padding: 15px 20px; }
+            .nav-links { display: none; }
+            .features-grid { grid-template-columns: 1fr; }
+            .access-grid { grid-template-columns: 1fr; }
+            .section { padding: 60px 20px; }
+            .section-header h2 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <!-- ==================== NAVBAR ==================== -->
+    <nav class="navbar" id="navbar">
+        <a href="#top" class="logo">
+            <div class="logo-icon">👁</div>
+            <span>Eye</span><span>Flow</span>
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it Works</a>
+            <a href="#accessibility">Accessibility</a>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO + AUTH ==================== -->
+    <section class="hero-section" id="top">
+        <div class="hero">
+            <div class="badge">Free & Open Source</div>
+            <h1>
+                Control Your<br>Computer With<br>
+                <span class="highlight">Your Eyes</span>
+            </h1>
+            <p>
+                EyeFlow uses your webcam to track eye movements, enabling
+                hands-free cursor control, blink-to-click, voice typing, and
+                smooth scrolling — all from your browser.
+            </p>
+            <div class="feature-tags">
+                <div class="feature-tag">👁 Eye Tracking</div>
+                <div class="feature-tag">🟠 Blink Click</div>
+                <div class="feature-tag">✏️ Voice Typing</div>
+                <div class="feature-tag">📜 Nose Scroll</div>
+                <div class="feature-tag">🔒 Privacy First</div>
+                <div class="feature-tag">♿ Accessible</div>
+            </div>
+        </div>
+
+        <div class="auth-section">
+            <div class="auth-card">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+                    <button class="auth-tab" onclick="switchTab('register')">Create Account</button>
+                </div>
+
+                <div class="message" id="auth-message"></div>
+
+                <form id="auth-form" onsubmit="handleAuth(event)">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <div class="input-wrapper">
+                            <span class="icon">👤</span>
+                            <input type="text" id="username" placeholder="Enter your username" required minlength="3">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrapper">
+                            <span class="icon">🔒</span>
+                            <input type="password" id="password" placeholder="Enter your password" required minlength="6">
+                            <button type="button" class="password-toggle" onclick="togglePassword()">👁</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group confirm-password" id="confirm-group">
+                        <label>Confirm Password</label>
+                        <div class="input-wrapper">
+                            <span class="icon">🔒</span>
+                            <input type="password" id="confirm-password" placeholder="Confirm your password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="auth-btn">
+                        <span class="spinner" id="btn-spinner"></span>
+                        <span id="btn-text">Sign In →</span>
+                    </button>
+
+                    <div class="privacy-note">
+                        🔒 Your data stays on your device. No tracking. No ads.
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ==================== FEATURES SECTION ==================== -->
+    <section class="section" id="features">
+        <div class="section-header animate-on-scroll">
+            <div class="section-badge">✦ Features</div>
+            <h2>Everything You Need for<br><span class="highlight">Hands-Free Control</span></h2>
+            <p>EyeFlow combines advanced computer vision with intuitive design to give you complete control of your computer using just your eyes.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon purple">👁</div>
+                <h3>Eye Tracking Cursor</h3>
+                <p>Your cursor follows your gaze in real-time. Using MediaPipe's 468-point face mesh and iris detection, we track where you're looking and move the cursor smoothly across the screen with head-compensation technology.</p>
+            </div>
+
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon orange">🟠</div>
+                <h3>Blink to Click</h3>
+                <p>Simply blink your right eye to perform a mouse click. Our advanced Eye Aspect Ratio (EAR) algorithm detects intentional blinks with 95%+ accuracy, with built-in debounce to prevent accidental clicks.</p>
+            </div>
+
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon green">✏️</div>
+                <h3>Voice Typing</h3>
+                <p>Click on any text field and start speaking. EyeFlow automatically activates voice recognition when you focus on a text input, converting your speech to text in real-time. Supports multiple languages.</p>
+            </div>
+
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon blue">📜</div>
+                <h3>Nose Scroll</h3>
+                <p>Tilt your head slightly up or down to scroll through pages. Our nose-tracking algorithm uses a comfortable dead-zone to prevent accidental scrolling, giving you smooth and precise scroll control.</p>
+            </div>
+
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon red">🔒</div>
+                <h3>Privacy First</h3>
+                <p>All processing happens locally on your machine. No video data is ever stored or sent to external servers. Your webcam feed is processed in real-time and immediately discarded. Your privacy is our priority.</p>
+            </div>
+
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon teal">⚡</div>
+                <h3>Low Latency</h3>
+                <p>Experience sub-100ms response times for smooth, natural cursor control. Our optimized pipeline processes 30 frames per second with exponential moving average smoothing for jitter-free movement.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ==================== HOW IT WORKS SECTION ==================== -->
+    <section class="section" id="how-it-works">
+        <div class="section-header animate-on-scroll">
+            <div class="section-badge">⚙️ How it Works</div>
+            <h2>Simple Setup,<br><span class="highlight">Powerful Control</span></h2>
+            <p>Get started in minutes with just a webcam. No special hardware needed.</p>
+        </div>
+
+        <div class="steps-container">
+            <div class="steps-line"></div>
+
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Create Your Account</h3>
+                    <p>Sign up with a username and password. Your calibration settings and preferences are saved securely to your profile so you can pick up right where you left off every time.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Calibrate Your Eyes</h3>
+                    <p>Look at 5 different points on your screen and press SPACE for each one. This teaches EyeFlow the range of your eye movements. Calibration takes just 30 seconds and is saved to your profile.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Launch the Tracker</h3>
+                    <p>Click "Start Now" from the dashboard. EyeFlow opens your webcam, loads your calibration, and begins tracking. You'll see live stats including FPS, accuracy, and latency.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Control Your Computer</h3>
+                    <p>Switch to any application — your cursor follows your gaze. Blink to click, tilt your head to scroll, and click on text fields to activate voice typing. EyeFlow works across your entire system.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Fine-Tune Settings</h3>
+                    <p>Adjust cursor smoothing, blink sensitivity, scroll speed, and more from the dashboard. Enable or disable voice typing, choose your language, and toggle sound feedback — all in real-time.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ==================== ACCESSIBILITY SECTION ==================== -->
+    <section class="section" id="accessibility">
+        <div class="section-header animate-on-scroll">
+            <div class="section-badge">♿ Accessibility</div>
+            <h2>Built for<br><span class="highlight">Everyone</span></h2>
+            <p>EyeFlow is designed to empower individuals with motor impairments and physical disabilities to use computers independently.</p>
+        </div>
+
+        <div class="access-grid">
+            <div class="access-card animate-on-scroll">
+                <div class="access-icon">🌍</div>
+                <div>
+                    <h3>1 Billion+ People Impacted</h3>
+                    <p>Over 1 billion people worldwide have disabilities affecting mobility. Traditional mouse and keyboard input is inaccessible to many. EyeFlow provides an affordable alternative that works with just a webcam.</p>
+                </div>
+            </div>
+
+            <div class="access-card animate-on-scroll">
+                <div class="access-icon">💰</div>
+                <div>
+                    <h3>95% Cost Reduction</h3>
+                    <p>Commercial eye tracking systems cost $5,000–$15,000. EyeFlow is completely free and open source, requiring only a standard webcam that most laptops already have built-in.</p>
+                </div>
+            </div>
+
+            <div class="access-card animate-on-scroll">
+                <div class="access-icon">🖥️</div>
+                <div>
+                    <h3>Cross-Platform</h3>
+                    <p>Works on Windows, macOS, and Linux. No special software installation required beyond Python. Access through any modern web browser for the dashboard and control panel.</p>
+                </div>
+            </div>
+
+            <div class="access-card animate-on-scroll">
+                <div class="access-icon">📋</div>
+                <div>
+                    <h3>WCAG 2.1 Compliant</h3>
+                    <p>Our interface follows Web Content Accessibility Guidelines with high contrast dark theme, clear typography, keyboard navigation support, and screen reader compatible elements.</p>
+                </div>
+            </div>
+
+            <div class="access-card animate-on-scroll">
+                <div class="access-icon">🗣️</div>
+                <div>
+                    <h3>Multi-Language Voice</h3>
+                    <p>Voice typing supports English, Tamil, Hindi, Spanish, French, and more. Users can type in their native language by simply speaking, removing the barrier of keyboard-based input.</p>
+                </div>
+            </div>
+
+            <div class="access-card animate-on-scroll">
+                <div class="access-icon">🎯</div>
+                <div>
+                    <h3>Personalized Calibration</h3>
+                    <p>Each user's calibration is saved individually. The system adapts to different eye shapes, face structures, and seating positions. Re-calibrate anytime for optimal accuracy.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="footer">
+        <p>© 2026 EyeFlow — Built by Parthiban D. | <a href="#top">Back to top ↑</a></p>
+    </footer>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <script>
+        let currentTab = 'login';
+
+        // ---- Navbar scroll effect ----
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // ---- Scroll animation observer ----
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // ---- Auth Functions ----
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.auth-tab').forEach((t, i) => {
+                t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+            });
+            document.getElementById('confirm-group').style.display = tab === 'register' ? 'block' : 'none';
+            document.getElementById('btn-text').textContent = tab === 'login' ? 'Sign In →' : 'Create Account →';
+            hideMessage();
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const btn = event.currentTarget;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁';
+            }
+        }
+
+        function showMessage(text, type) {
+            const el = document.getElementById('auth-message');
+            el.textContent = text;
+            el.className = 'message ' + type;
+        }
+
+        function hideMessage() {
+            document.getElementById('auth-message').className = 'message';
+        }
+
+        function setLoading(loading) {
+            const btn = document.getElementById('auth-btn');
+            const spinner = document.getElementById('btn-spinner');
+            const text = document.getElementById('btn-text');
+            btn.disabled = loading;
+            spinner.style.display = loading ? 'block' : 'none';
+            text.style.opacity = loading ? '0.5' : '1';
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            hideMessage();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (username.length < 3) {
+                showMessage('Username must be at least 3 characters', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            if (currentTab === 'register') {
+                const confirm = document.getElementById('confirm-password').value;
+                if (password !== confirm) {
+                    showMessage('Passwords do not match', 'error');
+                    return;
+                }
+            }
+
+            const endpoint = currentTab === 'login' ? '/api/login' : '/api/register';
+
+            setLoading(true);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    }),
+                    credentials: 'same-origin'
+                });
+
+                let data;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    showMessage('Server error. Please check if the server is running.', 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                if (response.ok) {
+                    if (currentTab === 'login') {
+                        showMessage('Login successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            if (data.calibrated) {
+                                window.location.href = '/dashboard';
+                            } else {
+                                window.location.href = '/calibrate';
+                            }
+                        }, 800);
+                    } else {
+                        showMessage('Account created successfully! Please sign in.', 'success');
+                        setTimeout(() => {
+                            switchTab('login');
+                            document.getElementById('username').value = username;
+                            document.getElementById('password').value = '';
+                        }, 1500);
+                    }
+                } else {
+                    showMessage(data.error || 'Something went wrong', 'error');
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                showMessage('Cannot connect to server. Make sure the server is running on http://localhost:5000', 'error');
+            }
+
+            setLoading(false);
+        }
+
+        // ---- Smooth scroll for nav links ----
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

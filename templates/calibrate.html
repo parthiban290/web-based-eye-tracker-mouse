@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibrate - EyeFlow</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        /* Intro */
+        .intro {
+            text-align: center;
+            max-width: 560px;
+            padding: 40px;
+            animation: fadeIn 0.6s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .logo-cal {
+            font-size: 28px; font-weight: 800;
+            margin-bottom: 28px;
+            display: flex; align-items: center;
+            justify-content: center; gap: 10px;
+        }
+        .logo-cal .icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex; align-items: center;
+            justify-content: center; font-size: 20px;
+        }
+        .logo-cal .t1 { color: #fff; }
+        .logo-cal .t2 { color: #667eea; }
+        .intro h1 { font-size: 34px; font-weight: 800; margin-bottom: 14px; }
+        .intro h1 .hl {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .intro > p {
+            color: #777; font-size: 15px;
+            line-height: 1.7; margin-bottom: 28px;
+        }
+        .steps-box {
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px; padding: 22px 26px;
+            margin-bottom: 28px; text-align: left;
+        }
+        .steps-box h3 { font-size: 14px; color: #667eea; margin-bottom: 14px; }
+        .step-item {
+            display: flex; align-items: center;
+            gap: 12px; padding: 7px 0;
+            font-size: 13px; color: #aaa;
+        }
+        .step-num {
+            width: 26px; height: 26px; min-width: 26px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex; align-items: center;
+            justify-content: center;
+            font-size: 11px; font-weight: 700; color: #fff;
+        }
+        .btn-begin {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border: none;
+            padding: 16px 48px; border-radius: 12px;
+            font-size: 16px; font-weight: 700;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+        }
+        .btn-begin:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .btn-begin:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Loading */
+        .loading { text-align: center; display: none; }
+        .spinner-lg {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #888; font-size: 15px; }
+
+        /* Calibration dot */
+        .cal-dot {
+            position: fixed;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: #667eea;
+            display: none; z-index: 100;
+            pointer-events: none;
+            transition: left 0.8s ease, top 0.8s ease, opacity 0.3s;
+        }
+        .cal-dot::before {
+            content: ''; position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px; height: 8px;
+            background: #fff; border-radius: 50%;
+        }
+        .cal-dot::after {
+            content: ''; position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px; height: 60px;
+            border: 2px solid rgba(102, 126, 234, 0.35);
+            border-radius: 50%;
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.2; }
+        }
+        .cal-dot.show { display: block; }
+
+        /* Countdown inside dot */
+        .cal-countdown {
+            position: fixed;
+            z-index: 101;
+            font-size: 48px; font-weight: 800;
+            color: #667eea;
+            display: none;
+            pointer-events: none;
+            text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Top bar */
+        .top-bar {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 20px; display: none;
+            z-index: 200; text-align: center;
+            background: rgba(10, 10, 26, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        .top-bar h2 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+        .top-bar .sub { color: #888; font-size: 13px; margin-bottom: 10px; }
+        .prog-bar {
+            width: 300px; height: 5px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px; margin: 0 auto; overflow: hidden;
+        }
+        .prog-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 3px; transition: width 0.5s ease; width: 0%;
+        }
+
+        /* Bottom hint */
+        .bottom-hint {
+            position: fixed; bottom: 30px;
+            left: 50%; transform: translateX(-50%);
+            display: none; z-index: 200;
+        }
+        .hint-box {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(15, 15, 30, 0.9);
+            border: 1px solid rgba(102, 126, 234, 0.25);
+            padding: 14px 28px; border-radius: 12px;
+            font-size: 14px; backdrop-filter: blur(10px);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 80px;
+            left: 50%; transform: translateX(-50%);
+            z-index: 300; padding: 10px 24px;
+            border-radius: 10px; font-size: 13px;
+            font-weight: 600; display: none;
+            animation: toastIn 0.3s ease;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .toast.ok {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e; display: block;
+        }
+        .toast.err {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444; display: block;
+        }
+        .toast.warn {
+            background: rgba(234, 179, 8, 0.15);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            color: #eab308; display: block;
+        }
+
+        /* Success */
+        .done { text-align: center; display: none; animation: fadeIn 0.6s ease; }
+        .done-icon { font-size: 64px; margin-bottom: 16px; }
+        .done h1 { font-size: 30px; margin-bottom: 10px; }
+        .done p { color: #777; font-size: 15px; }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <!-- INTRO -->
+        <div class="intro" id="intro">
+            <div class="logo-cal">
+                <div class="icon">👁</div>
+                <span class="t1">Eye</span><span class="t2">Flow</span>
+            </div>
+            <h1>Let's <span class="hl">Calibrate</span></h1>
+            <p>We'll show 5 dots on screen. Just look at each dot — it captures automatically after 3 seconds. No keys needed!</p>
+
+            <div class="steps-box">
+                <h3>📋 How it works</h3>
+                <div class="step-item"><div class="step-num">1</div><span>A purple dot appears on screen with a countdown</span></div>
+                <div class="step-item"><div class="step-num">2</div><span>Look directly at the dot with your eyes</span></div>
+                <div class="step-item"><div class="step-num">3</div><span>Hold your gaze for 3 seconds (auto-captures)</span></div>
+                <div class="step-item"><div class="step-num">4</div><span>Dot moves to next position automatically</span></div>
+                <div class="step-item"><div class="step-num">5</div><span>Keep head still — only move your eyes</span></div>
+            </div>
+
+            <button class="btn-begin" id="btn-begin" onclick="beginCalibration()">
+                🎯 Start Calibration
+            </button>
+        </div>
+
+        <!-- LOADING -->
+        <div class="loading" id="loading">
+            <div class="spinner-lg"></div>
+            <p id="loading-text">Starting camera...</p>
+        </div>
+
+        <!-- SUCCESS -->
+        <div class="done" id="done">
+            <div class="done-icon">🎉</div>
+            <h1>Calibration Complete!</h1>
+            <p>Your profile is saved. Redirecting to dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Dot -->
+    <div class="cal-dot" id="dot"></div>
+
+    <!-- Countdown number displayed near dot -->
+    <div class="cal-countdown" id="countdown"></div>
+
+    <!-- Top bar -->
+    <div class="top-bar" id="topbar">
+        <h2>🎯 Calibration</h2>
+        <div class="sub" id="point-label">Point 1/5 — Look at the dot</div>
+        <div class="prog-bar"><div class="prog-fill" id="prog"></div></div>
+    </div>
+
+    <!-- Bottom hint -->
+    <div class="bottom-hint" id="hint">
+        <div class="hint-box">
+            👁 Look at the purple dot — captures automatically in 3 seconds
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 4 corners + center
+        const POINTS = [
+            { x: 8,  y: 8,  name: 'Top-Left' },
+            { x: 92, y: 8,  name: 'Top-Right' },
+            { x: 50, y: 50, name: 'Center' },
+            { x: 8,  y: 92, name: 'Bottom-Left' },
+            { x: 92, y: 92, name: 'Bottom-Right' }
+        ];
+
+        let currentPt = 0;
+        let active = false;
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type;
+            setTimeout(() => { t.className = 'toast'; }, 3000);
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function beginCalibration() {
+            const btn = document.getElementById('btn-begin');
+            btn.disabled = true;
+
+            document.getElementById('intro').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading-text').textContent = 'Opening camera...';
+
+            try {
+                const res = await fetch('/api/calibration/start-capture', { method: 'POST' });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('intro').style.display = 'block';
+                    btn.disabled = false;
+                    showToast(data.error || 'Camera failed', 'err');
+                    return;
+                }
+
+                document.getElementById('loading-text').textContent = 'Camera ready!';
+                await sleep(500);
+
+            } catch (e) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('intro').style.display = 'block';
+                btn.disabled = false;
+                showToast('Server connection failed', 'err');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('topbar').style.display = 'block';
+            document.getElementById('hint').style.display = 'block';
+
+            active = true;
+            currentPt = 0;
+            await runPoint(0);
+        }
+
+        async function runPoint(idx) {
+            if (idx >= POINTS.length || !active) {
+                await finishCalibration();
+                return;
+            }
+
+            const dot = document.getElementById('dot');
+            const countdown = document.getElementById('countdown');
+            const pt = POINTS[idx];
+
+            // Move dot
+            dot.style.left = `calc(${pt.x}vw - 18px)`;
+            dot.style.top = `calc(${pt.y}vh - 18px)`;
+            dot.classList.add('show');
+
+            // Position countdown near dot
+            countdown.style.left = `calc(${pt.x}vw + 30px)`;
+            countdown.style.top = `calc(${pt.y}vh - 24px)`;
+
+            document.getElementById('point-label').textContent =
+                `Point ${idx + 1}/5 — Look at ${pt.name}`;
+            document.getElementById('prog').style.width = `${(idx / 5) * 100}%`;
+
+            // Wait 0.5s for user to find the dot
+            await sleep(500);
+
+            // Countdown 3, 2, 1
+            for (let i = 3; i >= 1; i--) {
+                countdown.textContent = i;
+                countdown.style.display = 'block';
+                await sleep(1000);
+            }
+            countdown.style.display = 'none';
+
+            // Capture
+            showToast(`⏳ Capturing point ${idx + 1}...`, 'warn');
+
+            let success = false;
+            let retries = 0;
+
+            while (!success && retries < 3) {
+                try {
+                    const res = await fetch('/api/calibration/capture-point', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ point_index: idx })
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast(`✅ Point ${idx + 1} captured!`, 'ok');
+                        success = true;
+                    } else {
+                        retries++;
+                        if (retries < 3) {
+                            showToast(`⚠ Retry ${retries}/3 - Keep looking at the dot...`, 'warn');
+                            await sleep(1500);
+                        } else {
+                            showToast(`❌ ${data.error || 'Failed'}. Retrying point...`, 'err');
+                            await sleep(1500);
+                            // Re-run same point
+                            await runPoint(idx);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    retries++;
+                    showToast('Server error, retrying...', 'err');
+                    await sleep(1000);
+                }
+            }
+
+            // Brief pause then next point
+            await sleep(600);
+
+            currentPt = idx + 1;
+            await runPoint(currentPt);
+        }
+
+        async function finishCalibration() {
+            active = false;
+
+            document.getElementById('dot').classList.remove('show');
+            document.getElementById('countdown').style.display = 'none';
+            document.getElementById('topbar').style.display = 'none';
+            document.getElementById('hint').style.display = 'none';
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading-text').textContent = 'Saving calibration...';
+
+            try {
+                const res = await fetch('/api/calibration/finish', { method: 'POST' });
+                const data = await res.json();
+                console.log('Saved:', data);
+            } catch (e) {
+                console.error('Save error:', e);
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('done').style.display = 'block';
+            document.getElementById('prog').style.width = '100%';
+
+            await sleep(2500);
+            window.location.href = '/dashboard';
+        }
+
+        // ESC to cancel
+        document.addEventListener('keydown', async (e) => {
+            if (e.code === 'Escape') {
+                active = false;
+                try { await fetch('/api/calibration/cancel', { method: 'POST' }); } catch(e) {}
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>
